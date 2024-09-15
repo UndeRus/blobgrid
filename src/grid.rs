@@ -1,5 +1,3 @@
-use std::vec;
-
 const MAX_SIZE: usize = 125000;
 
 pub struct Grid {
@@ -8,15 +6,17 @@ pub struct Grid {
 
 impl Grid {
     pub fn new() -> Self {
-        let mut result = Grid {
+        Grid {
             blob: [0; MAX_SIZE],
-        };
-        result.blob[0] = 255;
-        result
+        }
     }
 
     pub fn get_full(&self) -> [u8; MAX_SIZE] {
-        return self.blob;
+        self.blob
+    }
+    
+    pub fn set_full(&mut self, data: [u8; MAX_SIZE]) {
+        self.blob = data;
     }
 
     pub fn get_item(&self, index: usize) -> Option<bool> {
@@ -31,11 +31,12 @@ impl Grid {
     }
 
     pub fn get_range(&self, from_index: usize, to_index: usize) -> Vec<bool> {
+        todo!();
         if to_index < from_index {
             return vec![];
         }
         if to_index == from_index {
-            return self.get_item(to_index).map(|b|vec![b]).unwrap_or(vec![]);
+            return self.get_item(to_index).map(|b|vec![b]).unwrap_or_default();
         }
 
         let from_cell_index = from_index / 8;
@@ -58,15 +59,18 @@ impl Grid {
         self.blob[cell_index] = set_bit(cell, bit_index, value);
     }
 
-    pub fn toggle_item(&mut self, index: usize) {
-        if index >= MAX_SIZE {
-            return;
+    pub fn toggle_item(&mut self, index: usize) -> bool {
+        if index >= MAX_SIZE * 8 {
+            return false;
         }
         let cell_index = index / 8;
         let bit_index = index % 8;
         let cell = self.blob[cell_index];
-        self.blob[cell_index] = toggle_bit(cell, bit_index);
-        dbg!(cell_index, self.blob[cell_index]);
+
+        let toggled_byte = toggle_bit(cell, bit_index);
+        self.blob[cell_index] = toggled_byte;
+        get_bit(toggled_byte, bit_index)
+        //dbg!(cell_index, self.blob[cell_index]);
     }
 }
 
