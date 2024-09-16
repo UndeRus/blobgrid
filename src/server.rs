@@ -71,8 +71,11 @@ impl AppState {
     pub async fn load(&mut self) {
         let mut grid = self.grid.write().await;
         let data = fs::read("dump.bin").unwrap_or_default();
-        let data = BASE64_STANDARD.decode(&data).unwrap();
-        grid.set_full(data.try_into().unwrap())
+        if let Ok(data) = BASE64_STANDARD.decode(&data) {
+            if let Ok(data) = data.try_into() {
+                grid.set_full(data)
+            }
+        }
     }
 
     pub async fn save(&self) -> String {
