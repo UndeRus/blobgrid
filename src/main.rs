@@ -9,6 +9,7 @@ mod config;
 mod grid;
 mod server;
 mod ws;
+mod fine_grained;
 
 #[tokio::main]
 async fn main() {

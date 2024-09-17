@@ -17,13 +17,11 @@ use tokio::{
 };
 use tower_http::compression::CompressionLayer;
 
-use crate::{grid::Grid, ws};
+use crate::{fine_grained::Grid2, ws};
 
 #[derive(Clone)]
 pub struct AppState {
-    grid: Arc<RwLock<Grid>>,
-    //conns: Arc<RwLock<HashMap<SocketAddr, SplitSink<WebSocket, Message>>>>,
-    //sender: Sender<(usize, bool)>,
+    grid: Arc<RwLock<Grid2>>,
     pub broadcast: Arc<Mutex<broadcast::Sender<Message>>>,
     pub queue: Arc<Mutex<PointQueue>>,
 }
@@ -62,7 +60,7 @@ impl AppState {
 
 
         AppState {
-            grid: Arc::new(RwLock::new(Grid::new())),
+            grid: Arc::new(RwLock::new(Grid2::new())),
             broadcast,
             queue,
         }
@@ -73,14 +71,14 @@ impl AppState {
         let data = fs::read("dump.bin").unwrap_or_default();
         if let Ok(data) = BASE64_STANDARD.decode(&data) {
             if let Ok(data) = data.try_into() {
-                grid.set_full(data)
+                grid.set_full(data).await
             }
         }
     }
 
     pub async fn save(&self) -> String {
         let grid = self.grid.read().await;
-        BASE64_STANDARD.encode(grid.get_full())
+        BASE64_STANDARD.encode(grid.get_full().await)
     }
 }
 
@@ -115,6 +113,7 @@ async fn broadcast_timer(queue: Arc<Mutex<PointQueue>>, tx: Arc<Mutex<broadcast:
     }
 }
 
+/*
 async fn get_grid(
     Path((from_index, to_index)): Path<(usize, usize)>,
     State(state): State<AppState>,
@@ -127,6 +126,7 @@ async fn get_grid(
         "None".to_owned()
     }
 }
+*/
 
 async fn set_checkbox(
     Path(index): Path<usize>,
@@ -134,7 +134,7 @@ async fn set_checkbox(
 ) -> impl IntoResponse {
     println!("Got set checkbox to index {}", index);
     let mut grid = state.grid.write().await;
-    let toggled = grid.toggle_item(index);
+    let toggled = grid.toggle_item(index).await;
     //state.sender.send((index, toggled)).await;
 
     {
@@ -168,7 +168,7 @@ async fn index() -> impl IntoResponse {
 
 async fn full_grid(State(state): State<AppState>) -> impl IntoResponse {
     let grid = state.grid.read().await;
-    let full = grid.get_full();
+    let full = grid.get_full().await;
 
     BASE64_STANDARD.encode(full)
 }
@@ -178,7 +178,7 @@ pub fn router(state: AppState) -> Router {
         .route("/ws", get(ws::ws_grid))
         .route("/grid", get(full_grid))
         .route("/set/:index", post(set_checkbox))
-        .route("/grid/:from/:to", get(get_grid))
+        //.route("/grid/:from/:to", get(get_grid))
         .route("/", get(index))
         .layer(CompressionLayer::new())
         .with_state(state)

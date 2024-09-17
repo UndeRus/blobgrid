@@ -75,7 +75,7 @@ impl Grid {
 }
 
 #[inline]
-fn get_bit(byte: u8, bit_index: usize) -> bool {
+pub fn get_bit(byte: u8, bit_index: usize) -> bool {
     let bit_mask = 0x1;
     let shifted_bit = byte >> bit_index;
     (shifted_bit & bit_mask) == 1
@@ -89,7 +89,7 @@ fn get_bit_range(byte: u8, from: usize, to: usize) -> Vec<bool> {
 */
 
 #[inline]
-fn set_bit(byte: u8, bit_index: usize, value: bool) -> u8 {
+pub fn set_bit(byte: u8, bit_index: usize, value: bool) -> u8 {
     if value {
         (1 << bit_index) | byte
     } else {
@@ -98,7 +98,7 @@ fn set_bit(byte: u8, bit_index: usize, value: bool) -> u8 {
 }
 
 #[inline]
-fn toggle_bit(byte: u8, bit_index: usize) -> u8 {
+pub fn toggle_bit(byte: u8, bit_index: usize) -> u8 {
     (1 << bit_index) ^ byte
 }
 
