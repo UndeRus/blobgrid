@@ -58,6 +58,7 @@ async fn shutdown_signal(state: AppState) {
             println!("Finished");
         },
         _ = terminate => {
+            fs::write("dump.bin", state.save().await);
             println!("Finished")
         },
     }
