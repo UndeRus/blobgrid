@@ -1,16 +1,20 @@
 <script lang="ts">
   import axios from "axios";
   import panzoom, { type PanZoom } from "panzoom";
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
 
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
   let socket: WebSocket;
   let instance: PanZoom;
 
-  onMount(() => {
+  let width = 1000;
+  let height = 1000;
+
+  onMount(async () => {
     ctx = canvas.getContext("2d")!!;
-    ws();
+    //ws();
+    await loadCanvas();
   });
 
   onDestroy(() => {});
@@ -37,14 +41,22 @@
     ctx.putImageData(imgData, x, y);
   }
 
-  function loadCanvas() {
-    axios.get("/api/grid").then(function (response) {
+  async function loadCanvas() {
+    let response = await axios.get("/api/subgrid");
       // handle success
       //console.log(response);
-      let data = base64ToArrayBuffer(response.data);
+      let subgridData = response.data;
+
+      let data = base64ToArrayBuffer(subgridData.data);
       //console.log(data);
-      loadInitialCanvasData(data);
-    });
+
+      width = subgridData.width;
+      height = subgridData.height;
+      
+
+      await tick();
+      drawBorder(subgridData.width, subgridData.height);
+      loadInitialCanvasData(data, subgridData.width, subgridData.height);
   }
 
   function base64ToArrayBuffer(base64: string) {
@@ -56,10 +68,23 @@
     return bytes.buffer;
   }
 
-  function loadInitialCanvasData(inputData: ArrayBufferLike) {
+  function drawBorder(width: number, height: number) {
+    ctx.beginPath(); // Start a new path
+    ctx.moveTo(width, 0); // Move the pen to (30, 50)
+    ctx.lineTo(width, height); // Draw a line to (150, 100)
+    ctx.lineTo(0, height);
+    ctx.stroke(); // Render the path
+  }
+
+  function loadInitialCanvasData(
+    inputData: ArrayBufferLike,
+    width: number,
+    height: number
+  ) {
     let setCount = 0;
-    const imgData = ctx.createImageData(1000, 1000);
+    const imgData = ctx.createImageData(width, height);
     let byteInputData = new Uint8Array(inputData);
+    console.log(byteInputData.length);
     const data = imgData.data;
     let bit_index = 0;
     let byte_index = 0;
@@ -83,6 +108,9 @@
         data[i * 4 + 2] = 255; //b
       }
       data[i * 4 + 3] = 255; //a
+
+
+      console.log(i);
     }
     //console.log(bit_index);
     ctx.putImageData(imgData, 0, 0);
@@ -138,15 +166,17 @@
     };
   }
 
-  function initPanzoom(node: HTMLElement) {
-    instance = panzoom(node, {
-      smoothScroll: false,
-      bounds: { left: 0, top: 0, right: 0, bottom: 0 },
-      boundsPadding: 0.05,
-      maxZoom: 10,
-      minZoom: 1,
-    });
-  }
+  /*
+    function initPanzoom(node: HTMLElement) {
+      instance = panzoom(node, {
+        smoothScroll: false,
+        bounds: { left: 0, top: 0, right: 0, bottom: 0 },
+        boundsPadding: 0.05,
+        maxZoom: 10,
+        minZoom: 1,
+      });
+    }
+    */
 
   function handleCanvasClick(event: MouseEvent) {
     const rect = canvas.getBoundingClientRect();
@@ -174,11 +204,10 @@
 
 <div id="canvasWrapper">
   <canvas
-    use:initPanzoom
     bind:this={canvas}
     id="myCanvas"
-    width="1000"
-    height="1000"
+    {width}
+    {height}
     on:mouseup={handleCanvasClick}
   ></canvas>
 </div>
@@ -188,5 +217,7 @@
     image-rendering: pixelated;
     border: 1px solid #000000;
     box-sizing: border-box;
+    scale: 9;
+    transform-origin: 0 0;
   }
 </style>

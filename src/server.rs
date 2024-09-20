@@ -4,24 +4,25 @@ use axum::{
     extract::{ws::Message, Path, State},
     response::{Html, IntoResponse},
     routing::{get, post},
-    Router,
+    Json, Router,
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
 use serde::Serialize;
 use tokio::{
-    sync::{
-        broadcast,
-        Mutex, RwLock,
-    },
+    sync::{broadcast, Mutex, RwLock},
     time,
 };
 use tower_http::compression::CompressionLayer;
 
-use crate::{fine_grained::Grid2, ws};
+use crate::{
+    fine_grained::Grid2,
+    grid::{Grid, Grid1, SubRectInfo},
+    ws,
+};
 
 #[derive(Clone)]
 pub struct AppState {
-    grid: Arc<RwLock<Grid2>>,
+    grid: Arc<RwLock<Grid1>>,
     pub broadcast: Arc<Mutex<broadcast::Sender<Message>>>,
     pub queue: Arc<Mutex<PointQueue>>,
 }
@@ -58,9 +59,8 @@ impl AppState {
         let broadcast = Arc::new(Mutex::new(tx));
         tokio::spawn(broadcast_timer(queue.clone(), broadcast.clone()));
 
-
         AppState {
-            grid: Arc::new(RwLock::new(Grid2::new())),
+            grid: Arc::new(RwLock::new(Grid::new())),
             broadcast,
             queue,
         }
@@ -82,7 +82,10 @@ impl AppState {
     }
 }
 
-async fn broadcast_timer(queue: Arc<Mutex<PointQueue>>, tx: Arc<Mutex<broadcast::Sender<Message>>>) {
+async fn broadcast_timer(
+    queue: Arc<Mutex<PointQueue>>,
+    tx: Arc<Mutex<broadcast::Sender<Message>>>,
+) {
     let mut interval = time::interval(Duration::from_millis(5000));
     loop {
         interval.tick().await;
@@ -103,10 +106,10 @@ async fn broadcast_timer(queue: Arc<Mutex<PointQueue>>, tx: Arc<Mutex<broadcast:
                 if let Err(err) = tx.lock().await.send(Message::Text(text)) {
                     println!("Failed to broadcast a message, {}", err);
                 }
-            },
+            }
             Err(_) => {
                 continue;
-            },
+            }
         }
 
         points.clear();
@@ -173,10 +176,45 @@ async fn full_grid(State(state): State<AppState>) -> impl IntoResponse {
     BASE64_STANDARD.encode(full)
 }
 
+async fn sub_grid(State(state): State<AppState>) -> impl IntoResponse {
+    let grid = state.grid.read().await;
+
+    let subgrid = grid.get_rect(0, 0, 10, 10).await;
+
+    println!("Length {}", subgrid.data.len());
+
+    let subgrid2 = SubRectInfoJson::from_info(&subgrid);
+    Json(subgrid2)
+}
+
+#[derive(Serialize)]
+pub struct SubRectInfoJson {
+    pub data: String,
+    pub x_shift: usize,
+    pub y_shift: usize,
+    pub width: usize,
+    pub height: usize,
+    pub canvas_width: usize,
+}
+
+impl SubRectInfoJson {
+    fn from_info(info: &SubRectInfo) -> Self {
+        Self {
+            data: BASE64_STANDARD.encode(info.data.clone()),
+            x_shift: info.x_shift,
+            y_shift: info.y_shift,
+            width: info.width,
+            height: info.height,
+            canvas_width: info.canvas_width,
+        }
+    }
+}
+
 pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/ws", get(ws::ws_grid))
-        .route("/grid", get(full_grid))
+        .route("/api/grid", get(full_grid))
+        .route("/api/subgrid", get(sub_grid))
         .route("/set/:index", post(set_checkbox))
         //.route("/grid/:from/:to", get(get_grid))
         .route("/", get(index))
@@ -187,7 +225,6 @@ pub fn router(state: AppState) -> Router {
 #[cfg(test)]
 mod tests {
     use crate::server::PointQueue;
-
 
     #[test]
     fn json_test() {

@@ -11,7 +11,10 @@ export default defineConfig({
 				ws: true,
 				rewriteWsOrigin: true
 			},
-			'^/grid.*': {
+			'^/api/grid.*': {
+				target: 'http://localhost:3000'
+			},
+			'^/api/subgrid.*': {
 				target: 'http://localhost:3000'
 			},
 			'^/set.*': {
