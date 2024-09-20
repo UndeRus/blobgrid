@@ -46,9 +46,18 @@ async fn read(
     mut receiver: SplitStream<WebSocket>,
 ) {
     while let Some(Ok(msg)) = receiver.next().await {
-        if matches!(msg, Message::Close(_)) {
-            println!("Disconnecing");
-            return;
+        match msg {
+            Message::Ping(_) => {
+                print!("Got ping");
+            },
+            Message::Pong(_) => {
+                print!("Got pong");
+            },
+            Message::Close(_) => {
+                println!("Disconnecting");
+                return;
+            },
+            _ => {}
         }
 
         println!("Broadcasting");
