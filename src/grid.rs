@@ -45,25 +45,24 @@ impl Grid for Grid1 {
         bytes_width: usize,
         height: usize,
     ) -> SubRectInfo {
+        let mut result = vec![0; bytes_width * height];
         let canvas_width = 1000;
-        let result_size: usize = bytes_width * height * 8;
-        let mut result: Vec<u8> = vec![0; result_size];
+        let canvas_width_in_bytes = canvas_width / 8;
 
-        let canvas_width_bytes = canvas_width / 8;
-        for y in 0..height*8 {
-            let blob_y = y * canvas_width_bytes;
+        for y in 0..height {
             for x in 0..bytes_width {
-                let blob_x = x + bytes_x;
-                result[y * height + x] = self.blob[blob_y + blob_x];
+                let global_y = bytes_y + y;
+                let global_x = bytes_x + x;
+                let index = global_y * canvas_width_in_bytes + global_x;
+                result[bytes_width * y + x] =self.blob[index];
             }
-
         }
         SubRectInfo {
             data: result,
             x_shift: bytes_x * 8,
-            y_shift: bytes_y * 8,
+            y_shift: bytes_y,
             width: bytes_width * 8,
-            height: height * 8,
+            height: height,
             canvas_width: canvas_width,
         }
     }

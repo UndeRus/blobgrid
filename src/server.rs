@@ -7,6 +7,7 @@ use axum::{
     Json, Router,
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
+use rand::{thread_rng, Rng};
 use serde::Serialize;
 use tokio::{
     sync::{broadcast, Mutex, RwLock},
@@ -178,11 +179,9 @@ async fn full_grid(State(state): State<AppState>) -> impl IntoResponse {
 
 async fn sub_grid(State(state): State<AppState>) -> impl IntoResponse {
     let grid = state.grid.read().await;
-
-    let subgrid = grid.get_rect(0, 0, 10, 10).await;
-
-    println!("Length {}", subgrid.data.len());
-
+    let x_shift = rand::thread_rng().gen_range(0..(125 - 10));
+    let y_shift = rand::thread_rng().gen_range(0..(1000 - 10));
+    let subgrid = grid.get_rect(x_shift, y_shift, 10, 80).await;
     let subgrid2 = SubRectInfoJson::from_info(&subgrid);
     Json(subgrid2)
 }

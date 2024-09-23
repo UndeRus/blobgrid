@@ -166,18 +166,6 @@
     };
   }
 
-  /*
-    function initPanzoom(node: HTMLElement) {
-      instance = panzoom(node, {
-        smoothScroll: false,
-        bounds: { left: 0, top: 0, right: 0, bottom: 0 },
-        boundsPadding: 0.05,
-        maxZoom: 10,
-        minZoom: 1,
-      });
-    }
-    */
-
   function handleCanvasClick(event: MouseEvent) {
     const rect = canvas.getBoundingClientRect();
     const { x: panX, y: panY, scale } = instance.getTransform();
