@@ -198,7 +198,13 @@
   }
 
   function ws() {
-    socket = new WebSocket("/ws");
+    const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+    const hostname = window.location.hostname;
+    const port = window.location.port ? `:${window.location.port}` : ""; // If there's a port, include it
+    const path = "/ws"; // Replace with your actual path
+
+    const wsUrl = `${protocol}${hostname}${port}${path}`;
+    socket = new WebSocket(wsUrl);
     console.log("Connecting");
 
     socket.onmessage = (event) => {
@@ -211,11 +217,11 @@
         let y = Math.floor(index / 1000) - yShift;
         let x = (index % 1000) - xShift;
         // console.log(x, y);
-        if(x < 0 || x >= 80) {
-            return;
+        if (x < 0 || x >= 80) {
+          return;
         }
-        if(x < 0 || y >= 80) {
-            return;
+        if (x < 0 || y >= 80) {
+          return;
         }
         squares[y][x] = color;
         renderSquare(y, x, color);
@@ -224,11 +230,11 @@
         color = "#ffffff";
         let y = Math.floor(index / 1000) - yShift;
         let x = (index % 1000) - xShift;
-        if(x < 0 || x >= 80) {
-            return;
+        if (x < 0 || x >= 80) {
+          return;
         }
-        if(x < 0 || y >= 80) {
-            return;
+        if (x < 0 || y >= 80) {
+          return;
         }
         console.log(x, y);
         squares[y][x] = color;
@@ -255,7 +261,6 @@
       console.log(`[error]`, error);
     };
   }
-
 </script>
 
 <svelte:window bind:innerHeight bind:innerWidth on:resize={resizeCanvas} />
@@ -270,16 +275,6 @@
 <div id="hover-square" bind:this={hoverSquare}></div>
 
 <style>
-  body,
-  html {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
   #hover-square {
     position: absolute;
     border: 1px solid black;

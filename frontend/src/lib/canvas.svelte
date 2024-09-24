@@ -96,7 +96,13 @@
   }
 
   function ws() {
-    socket = new WebSocket("/ws");
+    const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+    const hostname = window.location.hostname;
+    const port = window.location.port ? `:${window.location.port}` : ""; // If there's a port, include it
+    const path = "/ws"; // Replace with your actual path
+
+    const wsUrl = `${protocol}${hostname}${port}${path}`;
+    socket = new WebSocket(wsUrl);
     console.log("Connecting");
 
     socket.onmessage = (event) => {
