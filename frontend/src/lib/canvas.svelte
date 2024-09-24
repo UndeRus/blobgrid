@@ -171,6 +171,7 @@
     });
   }
 </script>
+<div id="goto"><a href="/subgrid">Edit here</a></div>
 
 <div id="canvasWrapper">
   <canvas
@@ -187,5 +188,12 @@
     image-rendering: pixelated;
     border: 1px solid #000000;
     box-sizing: border-box;
+  }
+  
+  #goto {
+    position: absolute;
+    z-index: 11111;
+    background: rgb(255 255 255 / 70%);
+    padding: 1em;
   }
 </style>
