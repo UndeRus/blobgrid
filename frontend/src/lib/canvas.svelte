@@ -179,7 +179,6 @@
     id="myCanvas"
     width="1000"
     height="1000"
-    on:mouseup={handleCanvasClick}
   ></canvas>
 </div>
 
