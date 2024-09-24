@@ -15,8 +15,10 @@ pub trait Grid {
         bytes_x: usize,
         bytes_y: usize,
         bytes_width: usize,
-        bytes_height: usize,
+        height: usize,
     ) -> SubRectInfo;
+
+    async fn toggle_item(&mut self, index: usize) -> bool;
 }
 
 pub struct Grid1 {
@@ -66,6 +68,20 @@ impl Grid for Grid1 {
             canvas_width: canvas_width,
         }
     }
+
+    async fn toggle_item(&mut self, index: usize) -> bool {
+        if index >= MAX_SIZE * 8 {
+            return false;
+        }
+        let cell_index = index / 8;
+        let bit_index = index % 8;
+        let cell = self.blob[cell_index];
+
+        let toggled_byte = toggle_bit(cell, bit_index);
+        self.blob[cell_index] = toggled_byte;
+        get_bit(toggled_byte, bit_index)
+        //dbg!(cell_index, self.blob[cell_index]);
+    }
 }
 
 impl Grid1 {
@@ -107,20 +123,6 @@ impl Grid1 {
         let bit_index = index % 8;
         let cell = self.blob[cell_index];
         self.blob[cell_index] = set_bit(cell, bit_index, value);
-    }
-
-    pub async fn toggle_item(&mut self, index: usize) -> bool {
-        if index >= MAX_SIZE * 8 {
-            return false;
-        }
-        let cell_index = index / 8;
-        let bit_index = index % 8;
-        let cell = self.blob[cell_index];
-
-        let toggled_byte = toggle_bit(cell, bit_index);
-        self.blob[cell_index] = toggled_byte;
-        get_bit(toggled_byte, bit_index)
-        //dbg!(cell_index, self.blob[cell_index]);
     }
 }
 

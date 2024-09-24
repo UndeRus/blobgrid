@@ -23,7 +23,7 @@ use crate::{
 
 #[derive(Clone)]
 pub struct AppState {
-    grid: Arc<RwLock<Grid1>>,
+    grid: Arc<RwLock<Grid2>>,
     pub broadcast: Arc<Mutex<broadcast::Sender<Message>>>,
     pub queue: Arc<Mutex<PointQueue>>,
 }
@@ -60,8 +60,9 @@ impl AppState {
         let broadcast = Arc::new(Mutex::new(tx));
         tokio::spawn(broadcast_timer(queue.clone(), broadcast.clone()));
 
+        let grid = Grid::new();
         AppState {
-            grid: Arc::new(RwLock::new(Grid::new())),
+            grid: Arc::new(RwLock::new(grid)),
             broadcast,
             queue,
         }
@@ -180,7 +181,7 @@ async fn full_grid(State(state): State<AppState>) -> impl IntoResponse {
 async fn sub_grid(State(state): State<AppState>) -> impl IntoResponse {
     let grid = state.grid.read().await;
     let x_shift = rand::thread_rng().gen_range(0..(125 - 10));
-    let y_shift = rand::thread_rng().gen_range(0..(1000 - 10));
+    let y_shift = rand::thread_rng().gen_range(0..(1000 - 80));
     let subgrid = grid.get_rect(x_shift, y_shift, 10, 80).await;
     let subgrid2 = SubRectInfoJson::from_info(&subgrid);
     Json(subgrid2)
