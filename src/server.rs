@@ -17,7 +17,7 @@ use tower_http::compression::CompressionLayer;
 
 use crate::{
     fine_grained::Grid2,
-    grid::{Grid, Grid1, SubRectInfo},
+    grid::{Grid, SubRectInfo},
     ws,
 };
 
@@ -26,6 +26,25 @@ pub struct AppState {
     grid: Arc<RwLock<Grid2>>,
     pub broadcast: Arc<Mutex<broadcast::Sender<Message>>>,
     pub queue: Arc<Mutex<PointQueue>>,
+}
+
+impl AppState {
+    pub async fn toggle(&self, index: usize) -> bool {
+        let mut grid = self.grid.write().await;
+        let toggled = grid.toggle_item(index).await;
+        self.push_index(index, toggled).await;
+        println!("Got set checkbox to index {}", index);
+        toggled
+    }
+
+    async fn push_index(&self, index: usize, toggled: bool) {
+        let mut queue = self.queue.lock().await;
+        if toggled {
+            queue.on.push(index);
+        } else {
+            queue.off.push(index);
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -137,19 +156,7 @@ async fn set_checkbox(
     Path(index): Path<usize>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    println!("Got set checkbox to index {}", index);
-    let mut grid = state.grid.write().await;
-    let toggled = grid.toggle_item(index).await;
-    //state.sender.send((index, toggled)).await;
-
-    {
-        let mut queue = state.queue.lock().await;
-        if toggled {
-            queue.on.push(index);
-        } else {
-            queue.off.push(index);
-        }
-    }
+    let toggled = state.toggle(index).await;
 
     if toggled {
         "1"
