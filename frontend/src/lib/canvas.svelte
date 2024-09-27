@@ -15,18 +15,6 @@
   onMount(() => {
     ctx = canvas.getContext("2d")!!;
     ws();
-
-    /*
-    var input_data: Array<[number, number]> = [
-      [100, 12],
-      [1000, 34],
-      [500, 19],
-    ];
-    let points = calculateClusters(input_data);
-
-    zoomToNextPoint(points);
-
-    */
   });
 
   function zoomToNextPoint(clusterCenters: Array<[number, number]>) {
@@ -41,7 +29,7 @@
         let y = element[1];
         panAndZoomToPoint(x, y);
         i++;
-        setTimeout(iter, 3000);
+        setTimeout(iter, 1000);
         console.log("iter", i, x, y);
         return;
       }
@@ -50,7 +38,7 @@
   }
 
   function panAndZoomToPoint(x: number, y: number) {
-    const scale = 3;
+    const scale = 7;
     let xArg = -x + 500;
     let yArg = -y + 500;
     instance.zoom(scale, { animate: true, relative: false });
@@ -95,9 +83,7 @@
   function loadCanvas() {
     axios.get("/api/grid").then(function (response) {
       // handle success
-      //console.log(response);
       let data = base64ToArrayBuffer(response.data);
-      //console.log(data);
       loadInitialCanvasData(data, ctx);
     });
   }
@@ -115,29 +101,31 @@
     socket.onmessage = (event) => {
       //console.log(`[message] Данные получены с сервера: ${event.data}`);
       let data = event.data;
-      let color;
+      let color: string;
+      let preColor: string;
       data = JSON.parse(data);
       let onDots = data.on.map((index: number) => indexToXY(index));
       let offDots = data.off.map((index: number) => indexToXY(index));
 
       onDots.forEach((coords: [number, number]) => {
         color = "#ff0000";
+        preColor = "#ff8000"
         let [x, y] = coords;
-        //let y = Math.floor(index / 1000);
-        //let x = index % 1000;
-        setPixel(x, y, color);
+        setPixel(x, y, preColor);
+
+        setTimeout(() => setPixel(x, y, color), 1000);
       });
       offDots.forEach((coords: [number, number]) => {
+        preColor = "#0000ff"
         color = "#ffffff";
         let [x, y] = coords;
-        setPixel(x, y, color);
+        setPixel(x, y, preColor);
+        setTimeout(() => setPixel(x, y, color), 1000);
       });
 
       if (watchPixels) {
         let allDots = onDots.concat(offDots);
-        //TODO: clusterize points
         let clusters = calculateClusters(allDots);
-
         zoomToNextPoint(clusters);
       }
     };
@@ -206,5 +194,10 @@
     z-index: 11111;
     background: rgb(255 255 255 / 70%);
     padding: 1em;
+  }
+
+  #canvasWrapper {
+    width: 1002px;
+    height: 1002px;
   }
 </style>
