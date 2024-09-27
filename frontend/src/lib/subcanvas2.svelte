@@ -1,6 +1,7 @@
 <script lang="ts">
   import axios from "axios";
   import { onMount, tick } from "svelte";
+  import { base64ToArrayBuffer, is_bit_set } from "./bit_utils";
 
   let canvas: HTMLCanvasElement;
   let hoverSquare: HTMLDivElement;
@@ -105,6 +106,8 @@
       squares[row][col] = color;
       // Re-render only the clicked square
       renderSquare(row, col, color);
+    }).catch((reason) => {
+      alert("Упырьте мел");
     });
   }
 
@@ -182,21 +185,6 @@
 
     console.log(`${setCount} pixels set`);
   }
-
-  function base64ToArrayBuffer(base64: string) {
-    var binaryString = atob(base64);
-    var bytes = new Uint8Array(binaryString.length);
-    for (var i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes.buffer;
-  }
-
-  function is_bit_set(byte_value: number, bit_index: number) {
-    let mask = 1 << bit_index;
-    return (byte_value & mask) != 0;
-  }
-
   function ws() {
     const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
     const hostname = window.location.hostname;

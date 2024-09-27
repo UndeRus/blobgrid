@@ -20,8 +20,9 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@panzoom/panzoom": "^4.5.1",
 		"@sveltejs/adapter-static": "^3.0.4",
 		"axios": "^1.7.7",
-		"panzoom": "^9.4.3"
+		"kmeans-ts": "https://github.com/tweedegolf/K-Means-TS"
 	}
 }

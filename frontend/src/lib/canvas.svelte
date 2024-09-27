@@ -1,19 +1,74 @@
 <script lang="ts">
   import axios from "axios";
-  import panzoom, { type PanZoom } from "panzoom";
   import { onDestroy, onMount } from "svelte";
+  import { base64ToArrayBuffer, loadInitialCanvasData } from "./bit_utils";
+  import Panzoom, { type PanzoomObject } from "@panzoom/panzoom";
+  import kmeans from "kmeans-ts";
 
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
   let socket: WebSocket;
-  let instance: PanZoom;
+  let instance: PanzoomObject;
+
+  let watchPixels = false;
 
   onMount(() => {
     ctx = canvas.getContext("2d")!!;
     ws();
+
+    /*
+    var input_data: Array<[number, number]> = [
+      [100, 12],
+      [1000, 34],
+      [500, 19],
+    ];
+    let points = calculateClusters(input_data);
+
+    zoomToNextPoint(points);
+
+    */
   });
 
+  function zoomToNextPoint(clusterCenters: Array<[number, number]>) {
+    let i = 0;
+    function iter() {
+      if (!watchPixels) {
+        return;
+      }
+      while (i < clusterCenters.length) {
+        const element = clusterCenters[i];
+        let x = element[0];
+        let y = element[1];
+        panAndZoomToPoint(x, y);
+        i++;
+        setTimeout(iter, 3000);
+        console.log("iter", i, x, y);
+        return;
+      }
+    }
+    iter();
+  }
+
+  function panAndZoomToPoint(x: number, y: number) {
+    const scale = 3;
+    let xArg = -x + 500;
+    let yArg = -y + 500;
+    instance.zoom(scale, { animate: true, relative: false });
+    instance.pan(xArg, yArg, { animate: true, relative: false });
+  }
+
   onDestroy(() => {});
+
+  function calculateClusters(
+    points: Array<[number, number]>
+  ): Array<[number, number]> {
+    let clustersCount = Math.min(points.length, 3);
+    if (clustersCount < 3) {
+      return points;
+    }
+    var output = kmeans(points, 3, "kmeans");
+    return output.centroids;
+  }
 
   function setPixel(x: number, y: number, color: string) {
     // Create an ImageData object with a single pixel
@@ -43,56 +98,8 @@
       //console.log(response);
       let data = base64ToArrayBuffer(response.data);
       //console.log(data);
-      loadInitialCanvasData(data);
+      loadInitialCanvasData(data, ctx);
     });
-  }
-
-  function base64ToArrayBuffer(base64: string) {
-    var binaryString = atob(base64);
-    var bytes = new Uint8Array(binaryString.length);
-    for (var i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes.buffer;
-  }
-
-  function loadInitialCanvasData(inputData: ArrayBufferLike) {
-    let setCount = 0;
-    const imgData = ctx.createImageData(1000, 1000);
-    let byteInputData = new Uint8Array(inputData);
-    const data = imgData.data;
-    let bit_index = 0;
-    let byte_index = 0;
-    for (let i = 0; i < byteInputData.length * 8; i++) {
-      bit_index = i % 8;
-      byte_index = Math.floor(i / 8);
-      let byte_value = byteInputData[byte_index];
-      let is_set = is_bit_set(byte_value, bit_index);
-      let color;
-      if (is_set) {
-        //console.log("Found set", byte_index, bit_index);
-        setCount += 1;
-        color = 0;
-        data[i * 4] = 255; //r
-        data[i * 4 + 1] = 0; //g
-        data[i * 4 + 2] = 0; //b
-      } else {
-        color = 255;
-        data[i * 4] = 255; //r
-        data[i * 4 + 1] = 255; //g
-        data[i * 4 + 2] = 255; //b
-      }
-      data[i * 4 + 3] = 255; //a
-    }
-    //console.log(bit_index);
-    ctx.putImageData(imgData, 0, 0);
-
-    console.log(`${setCount} pixels set`);
-  }
-
-  function is_bit_set(byte_value: number, bit_index: number) {
-    let mask = 1 << bit_index;
-    return (byte_value & mask) != 0;
   }
 
   function ws() {
@@ -110,18 +117,29 @@
       let data = event.data;
       let color;
       data = JSON.parse(data);
-      data.on.forEach((index: number) => {
+      let onDots = data.on.map((index: number) => indexToXY(index));
+      let offDots = data.off.map((index: number) => indexToXY(index));
+
+      onDots.forEach((coords: [number, number]) => {
         color = "#ff0000";
-        let y = Math.floor(index / 1000);
-        let x = index % 1000;
+        let [x, y] = coords;
+        //let y = Math.floor(index / 1000);
+        //let x = index % 1000;
         setPixel(x, y, color);
       });
-      data.off.forEach((index: number) => {
+      offDots.forEach((coords: [number, number]) => {
         color = "#ffffff";
-        let y = Math.floor(index / 1000);
-        let x = index % 1000;
+        let [x, y] = coords;
         setPixel(x, y, color);
       });
+
+      if (watchPixels) {
+        let allDots = onDots.concat(offDots);
+        //TODO: clusterize points
+        let clusters = calculateClusters(allDots);
+
+        zoomToNextPoint(clusters);
+      }
     };
 
     socket.onopen = (e) => {
@@ -145,39 +163,26 @@
   }
 
   function initPanzoom(node: HTMLElement) {
-    instance = panzoom(node, {
-      smoothScroll: false,
-      bounds: { left: 0, top: 0, right: 0, bottom: 0 },
-      boundsPadding: 0.05,
-      maxZoom: 10,
-      minZoom: 1,
+    instance = Panzoom(node, {
+      canvas: true,
+      minScale: 1,
+      maxScale: 10,
     });
+    node.addEventListener("wheel", instance.zoomWithWheel);
   }
 
-  function handleCanvasClick(event: MouseEvent) {
-    const rect = canvas.getBoundingClientRect();
-    const { x: panX, y: panY, scale } = instance.getTransform();
-
-    let canvasX = event.offsetX;
-    let canvasY = event.offsetY;
-
-    let x = canvasX;
-    let y = canvasY;
-    let index = (y * 1000 + x).toString();
-    //console.log(index);
-    axios.post("/set/" + index).then((d) => {
-      let color;
-      if (d.data == "1") {
-        color = "#000000";
-      } else {
-        color = "#00ff00";
-      }
-
-      setPixel(x, y, color);
-    });
+  function indexToXY(index: number): [number, number] {
+    let y = Math.floor(index / 1000);
+    let x = index % 1000;
+    return [x, y];
   }
 </script>
-<div id="goto"><a href="/subgrid">Edit here</a></div>
+
+<div id="goto">
+  <a href="/subgrid">Edit here</a>
+  <input id="watch" type="checkbox" bind:value={watchPixels} />
+  <label for="watch">Watch</label>
+</div>
 
 <div id="canvasWrapper">
   <canvas
@@ -195,7 +200,7 @@
     border: 1px solid #000000;
     box-sizing: border-box;
   }
-  
+
   #goto {
     position: absolute;
     z-index: 11111;
