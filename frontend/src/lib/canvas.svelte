@@ -77,7 +77,7 @@
     data[3] = a;
 
     // Put the ImageData object onto the canvas at (x, y)
-    ctx.putImageData(imgData, x, y);
+    requestAnimationFrame(() => ctx.putImageData(imgData, x, y));
   }
 
   function loadCanvas() {
