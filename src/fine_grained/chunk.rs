@@ -1,6 +1,6 @@
 use tokio::sync::{Mutex, RwLock};
 
-use crate::grid::{get_bit, set_bit, toggle_bit};
+use crate::bit_utils::{get_bit, set_bit, toggle_bit};
 
 use super::CHUNK_SIZE;
 

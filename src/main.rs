@@ -5,8 +5,10 @@ use config::Cli;
 use server::{router, AppState};
 use tokio::signal;
 
+mod bit_utils;
 mod config;
 mod grid;
+mod grid1;
 mod server;
 mod ws;
 mod fine_grained;
