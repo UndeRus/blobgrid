@@ -1,4 +1,4 @@
-use std::{fs, sync::Arc, time::Duration};
+use std::{collections::HashSet, fs, sync::Arc, time::Duration};
 
 use axum::{
     extract::{ws::Message, Path, State},
@@ -33,31 +33,45 @@ impl AppState {
         let mut grid = self.grid.write().await;
         let toggled = grid.toggle_item(index).await;
         self.push_index(index, toggled).await;
-        println!("Got set checkbox to index {}", index);
+        println!("Got set checkbox to index {} {}", index, toggled);
         toggled
     }
 
     async fn push_index(&self, index: usize, toggled: bool) {
         let mut queue = self.queue.lock().await;
         if toggled {
-            queue.on.push(index);
+            if queue.on.contains(&index) {
+                return;
+            } else if queue.off.contains(&index) {
+                queue.on.remove(&index);
+                queue.off.remove(&index);
+            } else {
+                queue.on.insert(index);
+            }
         } else {
-            queue.off.push(index);
+            if queue.off.contains(&index) {
+                return;
+            } else if queue.on.contains(&index) {
+                queue.on.remove(&index);
+                queue.off.remove(&index);
+            } else {
+                queue.off.insert(index);
+            }
         }
     }
 }
 
 #[derive(Serialize)]
 pub struct PointQueue {
-    on: Vec<usize>,
-    off: Vec<usize>,
+    on: HashSet<usize>,
+    off: HashSet<usize>,
 }
 
 impl PointQueue {
     fn new() -> Self {
         Self {
-            on: vec![],
-            off: vec![],
+            on: HashSet::new(),
+            off: HashSet::new(),
         }
     }
 

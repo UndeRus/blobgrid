@@ -70,6 +70,9 @@
     ctx.strokeRect(x, y, squareSize, squareSize);
   }
 
+
+  let already_clicked: Array<number> = [];
+
   function handleCanvasClick(event: MouseEvent) {
     const rect = canvas.getBoundingClientRect();
     const localX = event.clientX - rect.left;
@@ -92,6 +95,11 @@
     let globalY = yShift + y;
     // console.log("global", globalX, globalY);
     let index = globalY * 1000 + globalX;
+    if(already_clicked.includes(index)) {
+      return;
+    } else {
+      already_clicked.push(index);
+    }
     // console.log("Index", index);
 
     axios.post("/set/" + index.toString()).then((d) => {
@@ -197,6 +205,7 @@
 
     socket.onmessage = (event) => {
       //console.log(`[message] Данные получены с сервера: ${event.data}`);
+      already_clicked = [];
       let data = event.data;
       let color;
       data = JSON.parse(data);
