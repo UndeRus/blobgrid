@@ -13,7 +13,7 @@
   let watchPixels = false;
 
   onMount(() => {
-    ctx = canvas.getContext("2d")!!;
+    ctx = canvas.getContext("2d", { colorSpace: "srgb" })!!;
     ws();
   });
 
@@ -30,7 +30,7 @@
         panAndZoomToPoint(x, y);
         i++;
         setTimeout(iter, 1000);
-        console.log("iter", i, x, y);
+        //console.log("iter", i, x, y);
         return;
       }
     }
@@ -58,10 +58,33 @@
     return output.centroids;
   }
 
+  function setBatchOfPixels(coords: Array<[number, number]>, color: string) {
+    // Parse the color string and set the pixel data
+    // Assuming color is in the format '#RRGGBB'
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    const a = 255; // Fully opaque
+
+    const pixel = new ImageData(1, 1);
+    const data = pixel.data;
+    // Set the pixel color (R, G, B, A)
+    data[0] = r;
+    data[1] = g;
+    data[2] = b;
+    data[3] = a;
+    for (let index = 0; index < coords.length; index++) {
+      const xy = coords[index];
+      const x = xy[0];
+      const y = xy[1];
+      ctx.putImageData(pixel, x, y);
+    }
+  }
+
   function setPixel(x: number, y: number, color: string) {
     // Create an ImageData object with a single pixel
-    const imgData = ctx.createImageData(1, 1);
-    const data = imgData.data;
+    //const imgData = ctx.createImageData(1, 1);
+    //const data = imgData.data;
 
     // Parse the color string and set the pixel data
     // Assuming color is in the format '#RRGGBB'
@@ -70,14 +93,19 @@
     const b = parseInt(color.slice(5, 7), 16);
     const a = 255; // Fully opaque
 
+    const pixel = new ImageData(1, 1);
+    const data = pixel.data;
     // Set the pixel color (R, G, B, A)
     data[0] = r;
     data[1] = g;
     data[2] = b;
     data[3] = a;
 
+    if (r == 255 && g == 255 && b == 255) {
+      console.log("index white", x + y * 1000);
+    }
     // Put the ImageData object onto the canvas at (x, y)
-    requestAnimationFrame(() => ctx.putImageData(imgData, x, y));
+    ctx.putImageData(pixel, x, y);
   }
 
   function loadCanvas() {
@@ -101,33 +129,25 @@
     socket.onmessage = (event) => {
       //console.log(`[message] Данные получены с сервера: ${event.data}`);
       let data = event.data;
-      let color: string;
-      let preColor: string;
-      data = JSON.parse(data);
-      let onDots = data.on.map((index: number) => indexToXY(index));
-      let offDots = data.off.map((index: number) => indexToXY(index));
+      setTimeout(() => {
+        data = JSON.parse(data);
+        let onDots = data.on.map((index: number) => indexToXY(index));
+        let offDots = data.off.map((index: number) => indexToXY(index));
 
-      onDots.forEach((coords: [number, number]) => {
-        color = "#ff0000";
-        preColor = "#ff8000"
-        let [x, y] = coords;
-        setPixel(x, y, preColor);
+        setBatchOfPixels(onDots, "#ff8000");
+        setTimeout(() => setBatchOfPixels(onDots, "#ff0000"), 1000);
 
-        setTimeout(() => setPixel(x, y, color), 1000);
-      });
-      offDots.forEach((coords: [number, number]) => {
-        preColor = "#0000ff"
-        color = "#ffffff";
-        let [x, y] = coords;
-        setPixel(x, y, preColor);
-        setTimeout(() => setPixel(x, y, color), 1000);
-      });
+        setBatchOfPixels(offDots, "#0000ff");
+        setTimeout(() => setBatchOfPixels(offDots, "#ffffff"), 1000);
 
-      if (watchPixels) {
-        let allDots = onDots.concat(offDots);
-        let clusters = calculateClusters(allDots);
-        zoomToNextPoint(clusters);
-      }
+        setTimeout(() => {
+          if (watchPixels) {
+            let allDots = onDots.concat(offDots);
+            let clusters = calculateClusters(allDots);
+            zoomToNextPoint(clusters);
+          }
+        }, 0);
+      }, 0);
     };
 
     socket.onopen = (e) => {
