@@ -13,7 +13,7 @@ use futures::{
 };
 use tokio::sync::{broadcast, Mutex};
 
-use crate::server::AppState;
+use crate::state::AppState;
 
 pub async fn ws_grid(
     ws: WebSocketUpgrade,

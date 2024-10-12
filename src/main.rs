@@ -2,7 +2,8 @@ use std::{fs, net::SocketAddr};
 
 use clap::Parser;
 use config::Cli;
-use server::{router, AppState};
+use server::router;
+use state::AppState;
 use tokio::signal;
 
 mod bit_utils;
@@ -12,6 +13,7 @@ mod grid1;
 mod server;
 mod ws;
 mod fine_grained;
+mod state;
 
 #[tokio::main]
 async fn main() {
