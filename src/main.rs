@@ -8,12 +8,12 @@ use tokio::signal;
 
 mod bit_utils;
 mod config;
+mod fine_grained;
 mod grid;
 mod grid1;
 mod server;
-mod ws;
-mod fine_grained;
 mod state;
+mod ws;
 
 #[tokio::main]
 async fn main() {
@@ -22,6 +22,9 @@ async fn main() {
     let mut state = AppState::new();
     println!("Loading data");
     state.load().await;
+
+    tokio::spawn(periodic_save(state.clone()));
+
     let app = router(state.clone());
     println!("Starting");
     // run our app with hyper, listening globally on port 3000
@@ -65,5 +68,15 @@ async fn shutdown_signal(state: AppState) {
             fs::write("dump.bin", state.save().await);
             println!("Finished")
         },
+    }
+}
+
+async fn periodic_save(state: AppState) {
+    let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(30000));
+    loop {
+        interval.tick().await;
+        println!("Saving backup at {:?}", tokio::time::Instant::now());
+        state.save().await;
+        state.save_png("dump.png").await;
     }
 }

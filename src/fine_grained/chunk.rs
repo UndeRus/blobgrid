@@ -15,14 +15,14 @@ impl Chunk {
         }
     }
 
-    pub (crate) async fn load_from_slice(&self, data: &[u8]) {
+    pub(crate) async fn load_from_slice(&self, data: &[u8]) {
         let mut chunk_data = self.data.write().await;
         chunk_data.copy_from_slice(data);
     }
 
-    pub (crate) async fn toggle_bit(&self, byte_offset: usize, bit_position: usize) -> bool {
+    pub(crate) async fn toggle_bit(&self, byte_offset: usize, bit_position: usize) -> bool {
         let mut chunk_data = self.data.write().await;
-        
+
         if bit_position < 8 {
             let new_byte = toggle_bit(chunk_data[byte_offset], bit_position);
             chunk_data[byte_offset] = new_byte;

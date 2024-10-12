@@ -1,4 +1,3 @@
-
 #[inline]
 pub fn get_bit(byte: u8, bit_index: usize) -> bool {
     let bit_mask = 0x1;
@@ -27,7 +26,6 @@ pub fn toggle_bit(byte: u8, bit_index: usize) -> u8 {
     (1 << bit_index) ^ byte
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -55,5 +53,4 @@ mod tests {
         let b1 = 128;
         assert_eq!(136, toggle_bit(b1, 3));
     }
-
 }

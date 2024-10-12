@@ -56,7 +56,7 @@ async fn read(mut receiver: SplitStream<WebSocket>, state: AppState) {
                     println!("Wrong message, len is {}", bin.len());
                     continue;
                 }
-                let b0: usize = bin.get(0).cloned().unwrap_or(0) as usize; 
+                let b0: usize = bin.get(0).cloned().unwrap_or(0) as usize;
                 let b1: usize = bin.get(1).cloned().unwrap_or(0) as usize;
                 let b2: usize = bin.get(2).cloned().unwrap_or(0) as usize;
                 let index = b0 + (b1 << 8) + (b2 << 16);

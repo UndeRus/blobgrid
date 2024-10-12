@@ -16,7 +16,10 @@ use tokio::{
 use tower_http::compression::CompressionLayer;
 
 use crate::{
-    fine_grained::Grid2, grid::{Grid, SubRectInfo}, state::AppState, ws
+    fine_grained::Grid2,
+    grid::{Grid, SubRectInfo},
+    state::AppState,
+    ws,
 };
 
 /*
@@ -118,7 +121,8 @@ mod tests {
     use crate::{
         bit_utils::{get_bit, set_bit},
         fine_grained::Grid2,
-        grid::{Grid, MAX_SIZE}, state::PointQueue
+        grid::{Grid, MAX_SIZE},
+        state::PointQueue,
     };
 
     #[test]
@@ -149,7 +153,11 @@ mod tests {
 
             let x = i % 1000;
             let y = i / 1000;
-            imgbuf.put_pixel(x as u32, y as u32, if bit_value { filled_color } else { empty_color });
+            imgbuf.put_pixel(
+                x as u32,
+                y as u32,
+                if bit_value { filled_color } else { empty_color },
+            );
         }
 
         imgbuf.save("dump.png").unwrap();
@@ -161,7 +169,6 @@ mod tests {
 
         let empty_color = image::Rgba([255u8, 255u8, 255u8, 255u8]);
 
-
         let img = image::open("dump.png").unwrap();
 
         let mut buffer: [u8; MAX_SIZE] = [0; MAX_SIZE];
@@ -169,17 +176,15 @@ mod tests {
         for i in 0..MAX_SIZE * 8 {
             let bit_index = i % 8;
             let byte_index = i / 8;
-            
 
             let x = (i % 1000) as u32;
             let y = (i / 1000) as u32;
-
 
             let byte = buffer[byte_index];
 
             //imgbuf.put_pixel(x as u32, y as u32, if bit_value { filled_color } else { empty_color });
             let color = img.get_pixel(x, y);
-            let byte = if color == empty_color  {
+            let byte = if color == empty_color {
                 set_bit(byte, bit_index, false)
             } else {
                 set_bit(byte, bit_index, true)
@@ -189,6 +194,5 @@ mod tests {
         }
 
         grid.set_full(buffer).await;
-        
     }
 }

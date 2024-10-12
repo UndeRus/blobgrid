@@ -23,7 +23,6 @@ pub trait Grid {
     async fn toggle_item(&mut self, index: usize) -> bool;
 }
 
-
 #[derive(Debug, Serialize)]
 pub struct SubRectInfo {
     pub data: Vec<u8>,

@@ -3,10 +3,16 @@ use std::{collections::HashSet, fs, sync::Arc, time::Duration};
 use axum::extract::ws::Message;
 use base64::{prelude::BASE64_STANDARD, Engine};
 use serde::Serialize;
-use tokio::{sync::{broadcast, Mutex, RwLock}, time};
+use tokio::{
+    sync::{broadcast, Mutex, RwLock},
+    time,
+};
 
-use crate::{fine_grained::Grid2, grid::Grid};
-
+use crate::{
+    bit_utils::get_bit,
+    fine_grained::Grid2,
+    grid::{Grid, MAX_SIZE},
+};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -101,6 +107,32 @@ impl AppState {
     pub async fn save(&self) -> String {
         let grid = self.grid.read().await;
         BASE64_STANDARD.encode(grid.get_full().await)
+    }
+
+    pub async fn save_png(&self, filename: &str) {
+        let buffer = self.grid.read().await.get_full().await;
+
+        let mut imgbuf = image::ImageBuffer::new(1000, 1000);
+
+        let filled_color = image::Rgb([255u8, 0u8, 0u8]);
+        let empty_color = image::Rgb([255u8, 255u8, 255u8]);
+
+        for i in 0..MAX_SIZE * 8 {
+            let bit_index = i % 8;
+            let byte_index = i / 8;
+            let byte = buffer[byte_index];
+            let bit_value = get_bit(byte, bit_index);
+
+            let x = i % 1000;
+            let y = i / 1000;
+            imgbuf.put_pixel(
+                x as u32,
+                y as u32,
+                if bit_value { filled_color } else { empty_color },
+            );
+        }
+
+        imgbuf.save(filename);
     }
 }
 

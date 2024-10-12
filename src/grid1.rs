@@ -1,5 +1,7 @@
-use crate::{bit_utils::{get_bit, set_bit, toggle_bit}, grid::{Grid, SubRectInfo, MAX_SIZE}};
-
+use crate::{
+    bit_utils::{get_bit, set_bit, toggle_bit},
+    grid::{Grid, SubRectInfo, MAX_SIZE},
+};
 
 pub struct Grid1 {
     blob: [u8; MAX_SIZE],
@@ -36,7 +38,7 @@ impl Grid for Grid1 {
                 let global_y = bytes_y + y;
                 let global_x = bytes_x + x;
                 let index = global_y * canvas_width_in_bytes + global_x;
-                result[bytes_width * y + x] =self.blob[index];
+                result[bytes_width * y + x] = self.blob[index];
             }
         }
         SubRectInfo {
@@ -104,7 +106,6 @@ impl Grid1 {
         self.blob[cell_index] = set_bit(cell, bit_index, value);
     }
 }
-
 
 #[cfg(test)]
 mod tests {

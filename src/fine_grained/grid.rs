@@ -16,7 +16,6 @@ impl Grid for Grid2 {
         Self { chunks }
     }
 
-
     async fn get_full(&self) -> [u8; MAX_SIZE] {
         let mut full_blob: Vec<u8> = Vec::with_capacity(MAX_SIZE);
 
@@ -74,7 +73,6 @@ impl Grid for Grid2 {
 }
 
 impl Grid2 {
-    
     fn get_chunk_info(byte_index: usize) -> (usize, usize) {
         let chunk_index = byte_index / CHUNK_SIZE;
         let offset_within_chunk = byte_index % CHUNK_SIZE;
