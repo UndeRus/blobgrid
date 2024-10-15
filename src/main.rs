@@ -17,16 +17,18 @@ mod ws;
 
 #[tokio::main]
 async fn main() {
+    env_logger::init();
+
     let cli = Cli::parse();
 
     let mut state = AppState::new();
-    println!("Loading data");
+    log::info!("Loading data");
     state.load().await;
 
     tokio::spawn(periodic_save(state.clone()));
 
     let app = router(state.clone());
-    println!("Starting");
+    log::info!("Starting");
     // run our app with hyper, listening globally on port 3000
     let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{}", cli.port.unwrap_or(3000)))
         .await
@@ -60,13 +62,14 @@ async fn shutdown_signal(state: AppState) {
 
     tokio::select! {
         _ = ctrl_c => {
-            println!("Dumping data");
+            log::info!("Dumping data by ctrl-c");
             fs::write("dump.bin", state.save().await);
-            println!("Finished");
+            log::info!("Finished");
         },
         _ = terminate => {
+            log::info!("Dumping data by terminate");
             fs::write("dump.bin", state.save().await);
-            println!("Finished")
+            log::info!("Finished")
         },
     }
 }
@@ -75,7 +78,7 @@ async fn periodic_save(state: AppState) {
     let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(30000));
     loop {
         interval.tick().await;
-        println!("Saving backup at {:?}", tokio::time::Instant::now());
+        log::info!("Saving backup at {:?}", tokio::time::Instant::now());
         state.save().await;
         state.save_png("dump.png").await;
     }

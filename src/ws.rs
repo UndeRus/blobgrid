@@ -21,7 +21,7 @@ pub async fn ws_grid(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    println!("connecting ws");
+    log::debug!("connecting ws");
     // finalize the upgrade process by returning upgrade callback.
     // we can customize the callback by sending additional info such as address.
     ws.on_upgrade(move |socket| handle_ws(socket, addr, state))
@@ -29,7 +29,7 @@ pub async fn ws_grid(
 
 async fn handle_ws(socket: WebSocket, addr: SocketAddr, state: AppState) {
     //TODO: check if already connected
-    println!("Connected ws from: {}", addr);
+    log::debug!("Connected ws from: {}", addr);
     let (sender, receiver) = socket.split();
 
     let sender = Arc::new(Mutex::new(sender));
@@ -46,14 +46,14 @@ async fn read(mut receiver: SplitStream<WebSocket>, state: AppState) {
     while let Some(Ok(msg)) = receiver.next().await {
         match msg {
             Message::Ping(_) => {
-                print!("Got ping");
+                log::debug!("Got ping");
             }
             Message::Pong(_) => {
-                print!("Got pong");
+                log::debug!("Got pong");
             }
             Message::Binary(bin) => {
                 if bin.len() < 3 {
-                    println!("Wrong message, len is {}", bin.len());
+                    log::warn!("Wrong message, len is {}", bin.len());
                     continue;
                 }
                 let b0: usize = bin.get(0).cloned().unwrap_or(0) as usize;
@@ -66,13 +66,13 @@ async fn read(mut receiver: SplitStream<WebSocket>, state: AppState) {
                 state.toggle(index).await;
             }
             Message::Close(_) => {
-                println!("Disconnecting");
+                log::debug!("Disconnecting");
                 return;
             }
             _ => {}
         }
 
-        println!("Broadcasting");
+        log::debug!("Broadcasting");
     }
 }
 

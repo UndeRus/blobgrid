@@ -26,7 +26,7 @@ impl AppState {
         let mut grid = self.grid.write().await;
         let toggled = grid.toggle_item(index).await;
         self.push_index(index, toggled).await;
-        println!("Got set checkbox to index {} {}", index, toggled);
+        log::info!("Got set checkbox to index {} {}", index, toggled);
         toggled
     }
 
@@ -158,7 +158,7 @@ async fn broadcast_timer(
         match message {
             Ok(text) => {
                 if let Err(err) = tx.lock().await.send(Message::Text(text)) {
-                    println!("Failed to broadcast a message, {}", err);
+                    log::warn!("Failed to broadcast a message, {}", err);
                 }
             }
             Err(_) => {
