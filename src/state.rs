@@ -16,6 +16,8 @@ use crate::{
 
 #[derive(Clone)]
 pub struct AppState {
+    pub dump_path: String,
+    pub bitmap_path: String,
     pub grid: Arc<RwLock<Grid2>>,
     pub broadcast: Arc<Mutex<broadcast::Sender<Message>>>,
     pub queue: Arc<Mutex<PointQueue>>,
@@ -79,7 +81,7 @@ impl PointQueue {
 }
 
 impl AppState {
-    pub fn new() -> Self {
+    pub fn new(dump_path: &str, bitmap_path: &str) -> Self {
         let (tx, _) = broadcast::channel(100);
 
         let queue = Arc::new(Mutex::new(PointQueue::new()));
@@ -88,6 +90,8 @@ impl AppState {
 
         let grid = Grid::new();
         AppState {
+            dump_path: dump_path.to_owned(),
+            bitmap_path: bitmap_path.to_owned(),
             grid: Arc::new(RwLock::new(grid)),
             broadcast,
             queue,
@@ -96,7 +100,7 @@ impl AppState {
 
     pub async fn load(&mut self) {
         let mut grid = self.grid.write().await;
-        let data = fs::read("dump.bin").unwrap_or_default();
+        let data = fs::read(&self.dump_path).unwrap_or_default();
         if let Ok(data) = BASE64_STANDARD.decode(&data) {
             if let Ok(data) = data.try_into() {
                 grid.set_full(data).await

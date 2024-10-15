@@ -21,7 +21,10 @@ async fn main() {
 
     let cli = Cli::parse();
 
-    let mut state = AppState::new();
+    let dump_path = cli.dump_path.unwrap_or("dump.bin".to_owned());
+    let bitmap_path = cli.bitmap_path.unwrap_or("dump.png".to_owned());
+
+    let mut state = AppState::new(&dump_path, &bitmap_path);
     log::info!("Loading data");
     state.load().await;
 
@@ -63,12 +66,14 @@ async fn shutdown_signal(state: AppState) {
     tokio::select! {
         _ = ctrl_c => {
             log::info!("Dumping data by ctrl-c");
-            fs::write("dump.bin", state.save().await);
+            fs::write(&state.dump_path, state.save().await);
+            state.save_png(&state.bitmap_path).await;
             log::info!("Finished");
         },
         _ = terminate => {
             log::info!("Dumping data by terminate");
-            fs::write("dump.bin", state.save().await);
+            fs::write(&state.dump_path, state.save().await);
+            state.save_png(&state.bitmap_path).await;
             log::info!("Finished")
         },
     }
@@ -79,7 +84,7 @@ async fn periodic_save(state: AppState) {
     loop {
         interval.tick().await;
         log::info!("Saving backup at {:?}", tokio::time::Instant::now());
-        state.save().await;
-        state.save_png("dump.png").await;
+        fs::write(&state.dump_path, state.save().await);
+        state.save_png(&state.bitmap_path).await;
     }
 }

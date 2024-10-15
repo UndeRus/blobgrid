@@ -27,6 +27,19 @@ Then open http://localhost:5173 and enjoy
 cargo run
 ```
 
+### Usage
+
+>>>
+Usage: blobgrid [OPTIONS]
+
+Options:
+  -p, --port <PORT>                
+  -d, --dump-path <DUMP_PATH>      
+  -b, --bitmap-path <BITMAP_PATH>  
+  -h, --help                       Print help
+  -V, --version                    Print version
+>>>
+
 ## Run frontend
 ```
 cd frontend
